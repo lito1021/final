@@ -1,67 +1,54 @@
 import java.util.Scanner;
 
-// Model
-class Grid {
-    private char[][] grid;
+class PlayerBoard {
+    private String[][] ownBoard;
+    private String[][] trackingBoard;
 
-    public Grid(int rows, int cols) {
-        grid = new char[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                grid[i][j] = '-';
+    public PlayerBoard() {
+        ownBoard = new String[10][10];
+        trackingBoard = new String[10][10];
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                ownBoard[i][j] = "🔵";  // Blue square emoji for empty space
+                trackingBoard[i][j] = "🔵";  // Blue square emoji for empty space
             }
         }
     }
 
-    public void setCell(int row, int col, char value) {
-        grid[row][col] = value;
+    public void setOwnBoardCell(int row, int col, String value) {
+        ownBoard[row][col] = value;
     }
 
-    public char[][] getGrid() {
-        return grid;
+    public void setTrackingBoardCell(int row, int col, String value) {
+        trackingBoard[row][col] = value;
+    }
+
+    public String[][] getOwnBoard() {
+        return ownBoard;
+    }
+
+    public String[][] getTrackingBoard() {
+        return trackingBoard;
     }
 }
 
-// View
-class GridView {
-    public void displayGrid(char[][] grid) {
+class BoardView {
+    public void displayGrid(String[][] grid) {
         System.out.print("  ");
         for (int i = 1; i <= grid[0].length; i++) {
-            System.out.print(i + " ");
+            System.out.print(i + "  ");
         }
         System.out.println();
         char rowLabel = 'A';
-        for (char[] row : grid) {
-            System.out.print(rowLabel + " ");
-            for (char cell : row) {
+        for (String[] row : grid) {
+            System.out.print(rowLabel +  " ");
+            for (String cell : row) {
                 System.out.print(cell + " ");
             }
             System.out.println();
             rowLabel++;
         }
-    }
-}
-
-// Controller
-class GridController {
-    private Grid model;
-    private GridView view;
-
-    public GridController(Grid model, GridView view) {
-        this.model = model;
-        this.view = view;
-    }
-
-    public void updateView() {
-        view.displayGrid(model.getGrid());
-    }
-
-    public void setCell(int row, int col, char value) {
-        model.setCell(row, col, value);
-    }
-
-    public char[][] getGrid() {
-        return model.getGrid();
     }
 }
 
@@ -83,29 +70,37 @@ public class main {
         }
     }
 
-    public static void placeShip(GridController controller, String shipType, char startRow, int startCol, char direction, int player) {
+    public static void placeShip(PlayerBoard playerBoard, String shipType, char startRow, int startCol, char direction) {
         int shipLength = shipType(shipType);
         int rowIndex = startRow - 'A';
         int colIndex = startCol - 1;
 
+        if (colIndex < 0 || colIndex + (direction == 'H' ? shipLength : 1) > 10) {
+            throw new IllegalArgumentException("Invalid column placement");
+        }
+
+        if (rowIndex < 0 || rowIndex + (direction == 'V' ? shipLength : 1) > 10) {
+            throw new IllegalArgumentException("Invalid row placement");
+        }
+
         if (direction == 'H') {
             for (int i = 0; i < shipLength; i++) {
-                controller.setCell(rowIndex, colIndex + i, 'X');
+                playerBoard.setOwnBoardCell(rowIndex, colIndex + i, "🚢");  // Ship emoji for ship
             }
         } else if (direction == 'V') {
             for (int i = 0; i < shipLength; i++) {
-                controller.setCell(rowIndex + i, colIndex, 'X');
+                playerBoard.setOwnBoardCell(rowIndex + i, colIndex, "🚢");  // Ship emoji for ship
             }
         } else {
             throw new IllegalArgumentException("Invalid direction");
         }
     }
 
-    public static boolean isGameOver(GridController controller) {
-        char[][] grid = controller.getGrid();
-        for (char[] row : grid) {
-            for (char cell : row) {
-                if (cell == 'X') {
+    public static boolean isGameOver(PlayerBoard playerBoard) {
+        String[][] ownBoard = playerBoard.getOwnBoard();
+        for (String[] row : ownBoard) {
+            for (String cell : row) {
+                if (cell.equals("🚢")) {
                     return false;
                 }
             }
@@ -114,36 +109,57 @@ public class main {
     }
 
     public static void main(String[] args) {
-        Grid player1Grid = new Grid(10, 10);
-        Grid player2Grid = new Grid(10, 10);
+        PlayerBoard player1 = new PlayerBoard();
+        PlayerBoard player2 = new PlayerBoard();
 
-        GridView view = new GridView();
-
-        GridController player1Controller = new GridController(player1Grid, view);
-        GridController player2Controller = new GridController(player2Grid, view);
+        BoardView view = new BoardView();
 
         try (Scanner battleship = new Scanner(System.in)) {
             for (int player = 1; player <= 2; player++) {
                 for (int i = 0; i < 5; i++) {
-                    if (player == 1) {
-                        player1Controller.updateView();
-                    } else {
-                        player2Controller.updateView();
+                    view.displayGrid(player == 1 ? player1.getOwnBoard() : player2.getOwnBoard());
+                    System.out.println("Please turn on caps lock. Player " + player + " you will first place your ships. First enter the type of ship. You can only use a ship one time. Choose between: Carrier, Battleship, Cruiser, Submarine, and Destroyer.");
+                    String shipType = battleship.next();  // Convert to uppercase once
+                    while (!shipType.equals("CARRIER") && !shipType.equals("BATTLESHIP") && !shipType.equals("CRUISER") && !shipType.equals("SUBMARINE") && !shipType.equals("DESTROYER")) {
+                        System.out.println("Invalid ship type. Please try again.");
+                        shipType = battleship.next().toUpperCase();  // Convert to uppercase in the loop as well
                     }
-                    System.out.println("Player " + player + ", place your ship in this order. Carrier, Battleship, Cruiser, Submarine, and Destroyer. First input the ship name, then it will prompt you for the row, column, and direction.");
-                    String shipType = battleship.next();
                     System.out.println("Enter starting row (A-J):");
-                    char row = battleship.next().toUpperCase().charAt(0);
+                    char row;
+                    while (true) {
+                        String inputRow = battleship.next().toUpperCase();
+                        if (inputRow.length() == 1 && inputRow.charAt(0) >= 'A' && inputRow.charAt(0) <= 'J') {
+                            row = inputRow.charAt(0);
+                            break;
+                        } else {
+                            System.out.println("Invalid row. Please enter a valid row (A-J):");
+                        }
+                    }
+
                     System.out.println("Enter starting column (1-10):");
-                    int col = battleship.nextInt();
+                    int col;
+                    while (true) {
+                        if (battleship.hasNextInt()) {
+                            col = battleship.nextInt();
+                            if (col >= 1 && col <= 10) {
+                                break;
+                            } else {
+                                System.out.println("Invalid column. Please enter a valid column (1-10):");
+                            }
+                        } else {
+                            System.out.println("Invalid input. Please enter a valid column (1-10):");
+                            battleship.next(); // Consume invalid input
+                        }
+                    }
+
                     System.out.println("Enter direction (H for horizontal, V for vertical):");
                     char direction = battleship.next().toUpperCase().charAt(0);
 
                     try {
                         if (player == 1) {
-                            placeShip(player1Controller, shipType, row, col, direction, player);
+                            placeShip(player1, shipType, row, col, direction);
                         } else {
-                            placeShip(player2Controller, shipType, row, col, direction, player);
+                            placeShip(player2, shipType, row, col, direction);
                         }
                     } catch (IllegalArgumentException e) {
                         System.out.println("Error: " + e.getMessage());
@@ -152,43 +168,50 @@ public class main {
                 }
             }
 
-            // Game loop
             int currentPlayer = 1;
-            GridController currentController = player1Controller;
-            GridController opponentController = player2Controller;
+            PlayerBoard currentPlayerBoard = player1;
+            PlayerBoard opponentPlayerBoard = player2;
 
-            while (!isGameOver(opponentController)) {
+            while (!isGameOver(opponentPlayerBoard)) {
                 System.out.println("Player " + currentPlayer + ", it's now your turn!");
-                opponentController.updateView();
-                System.out.println("Enter target row(A-J):");
-                char targetRow = battleship.next().toUpperCase().charAt(0);
-                System.out.println("Enter target column (1-10): ");
-                int targetCol = battleship.nextInt();
 
-                // Check if the move is a hit or miss
-                char targetCell = opponentController.getGrid()[targetRow - 'A'][targetCol - 1];
-                if (targetCell == 'X') {
-                    System.out.println("It's a HIT!");
-                } else if (targetCell == '-') {
-                    System.out.println("It's a MISS!");
-                } else {
-                    System.out.println("Invalid move. You've already targeted the position.");
-                    continue;
-                }
+                view.displayGrid(currentPlayerBoard.getTrackingBoard());
 
-                // Update opponent's grid based on the move
-                opponentController.setCell(targetRow - 'A', targetCol - 1, 'O');
+                boolean hitAgain = false;
 
-                // Switch players for the next turn
+                do {
+                    System.out.println("Enter target row (A-J):");
+                    char targetRow = battleship.next().toUpperCase().charAt(0);
+                    System.out.println("Enter target column (1-10):");
+                    int targetCol = battleship.nextInt();
+
+                    String targetCell = opponentPlayerBoard.getOwnBoard()[targetRow - 'A'][targetCol - 1];
+                    if (targetCell.equals("🚢")) {
+                        System.out.println("It's a HIT!");
+                        currentPlayerBoard.setTrackingBoardCell(targetRow - 'A', targetCol - 1, "❌");  // Red X emoji for hit
+                        hitAgain = true;
+                    } else if (targetCell.equals("🔵")) {
+                        System.out.println("It's a MISS!");
+                        currentPlayerBoard.setTrackingBoardCell(targetRow - 'A', targetCol - 1, "⚪");  // White circle emoji for miss
+                        hitAgain = false;
+                    } else {
+                        System.out.println("Invalid move. You've already targeted the position.");
+                        hitAgain = false;
+                    }
+                } while (hitAgain);
+
                 currentPlayer = (currentPlayer == 1) ? 2 : 1;
-                currentController = (currentController == player1Controller) ? player2Controller : player1Controller;
-                opponentController = (opponentController == player1Controller) ? player2Controller : player1Controller;
+
+                if (currentPlayer == 1) {
+                    currentPlayerBoard = player1;
+                    opponentPlayerBoard = player2;
+                } else {
+                    currentPlayerBoard = player2;
+                    opponentPlayerBoard = player1;
+                }
             }
 
-            // Game over, display the final results
-            System.out.println("Player " + currentPlayer + " wins! All opponent's ships are destroyed.");
-            opponentController.updateView();
+            System.out.println("Game over! Player " + currentPlayer + " wins!");
         }
     }
 }
-
