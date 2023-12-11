@@ -1,5 +1,4 @@
 import java.util.Scanner;
-import java.util.Random;
 
 // Model
 class Grid {
@@ -25,186 +24,171 @@ class Grid {
 
 // View
 class GridView {
-    public void displayGrid(char[][] grid, boolean hideShips) {
-        int rows = grid.length;
-        int cols = grid[0].length;
-
-        // Print column indices (A, B, C, ...)
+    public void displayGrid(char[][] grid) {
         System.out.print("  ");
-        for (int i = 0; i < cols; i++) {
-            char colLabel = (char) ('A' + i);
-            System.out.print(" " + colLabel);
+        for (int i = 1; i <= grid[0].length; i++) {
+            System.out.print(i + " ");
         }
         System.out.println();
-
-        // Print grid with row indices and cell values
-        for (int i = 0; i < rows; i++) {
-            String rowLabel = (i + 1) == 10 ? "10" : " " + (i + 1);
+        char rowLabel = 'A';
+        for (char[] row : grid) {
             System.out.print(rowLabel + " ");
-
-            for (int j = 0; j < cols; j++) {
-                char cellValue = grid[i][j];
-                if (hideShips && (cellValue == 'S' || cellValue == 'C' || cellValue == 'B' || cellValue == 'R'
-                        || cellValue == 'U' || cellValue == 'D')) {
-                    System.out.print("- ");
-                } else {
-                    System.out.print(cellValue + " ");
-                }
+            for (char cell : row) {
+                System.out.print(cell + " ");
             }
             System.out.println();
+            rowLabel++;
         }
     }
 }
 
 // Controller
 class GridController {
-    Grid playerGrid;
-    Grid botGrid;
+    private Grid model;
     private GridView view;
 
-    public GridController(Grid playerGrid, Grid botGrid, GridView view) {
-        this.playerGrid = playerGrid;
-        this.botGrid = botGrid;
+    public GridController(Grid model, GridView view) {
+        this.model = model;
         this.view = view;
     }
 
-    public void updatePlayerView() {
-        view.displayGrid(playerGrid.getGrid(), false);
+    public void updateView() {
+        view.displayGrid(model.getGrid());
     }
 
-    public void updateBotView() {
-        view.displayGrid(botGrid.getGrid(), true);
+    public void setCell(int row, int col, char value) {
+        model.setCell(row, col, value);
     }
 
-    public void setPlayerCell(int row, int col, char value) {
-        playerGrid.setCell(row, col, value);
-    }
-
-    public void setBotCell(int row, int col, char value) {
-        botGrid.setCell(row, col, value);
-    }
-
-    //Add the setCell method
-    public void setCell(int row, int col, char value, boolean isPlayer) {
-        if (isPlayer) {
-            setPlayerCell(row, col, value);
-        } else {
-            setBotCell(row, col, value);
-        }
+    public char[][] getGrid() {
+        return model.getGrid();
     }
 }
 
 public class main {
-    public static void main(String[] args) {
-        Grid playerGrid = new Grid(10, 10);
-        Grid botGrid = new Grid(10, 10);
-        GridView view = new GridView();
-        GridController controller = new GridController(playerGrid, botGrid, view);
-        Scanner battleship = new Scanner(System.in);  // Create a Scanner object
-
-        System.out.println("Welcome to Battleship! You will be playing against a bot.");
-
-        // Player setup
-        System.out.println("\nHere is your board:");
-        controller.updatePlayerView();
-        placeShips(controller, battleship, true);
-        
-
-        // Bot setup
-        System.out.println("\nBot is placing ships...");
-        placeShips(controller, battleship, false);
-
-        // Game loop (Player's turn)
-        boolean gameOver = false;
-
-        while (!gameOver) {
-            System.out.println("\nYour move:");
-            controller.updateBotView(); // Display the bot's hidden grid
-            // Implement your game logic for player's move here
-            // Example: Ask the player for a move (row and column) and update the bot's grid accordingly
-
-            // For simplicity, let's end the game after one move
-            gameOver = true;
-        }
-
-        battleship.close();
-    }
-
-    private static void placeShips(GridController controller, Scanner scanner, boolean isPlayer) {
-        String[] shipNames = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
-        int[] shipSizes = {5, 4, 3, 3, 2};
-
-        for (int i = 0; i < 5; i++) {
-            System.out.println("\nPlacing " + shipNames[i] + " (" + shipSizes[i] + " spaces)");
-
-            for (int j = 0; j < shipSizes[i]; j++) {
-                int row, col;
-
-                do {
-                    System.out.println("Enter the starting position for " + shipNames[i] + " (e.g., A1): ");
-                    String input = scanner.nextLine().toUpperCase();
-
-                    if (input.length() < 2 || input.length() > 3) {
-                        System.out.println("Invalid input. Try again.");
-                        continue;
-                    }
-
-                    char column = input.charAt(0);
-                    col = column - 'A';
-
-                    if (col < 0 || col >= 10) {
-                        System.out.println("Invalid column. Try again.");
-                        continue;
-                    }
-
-                    try {
-                        row = Integer.parseInt(input.substring(1));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid row. Try again.");
-                        continue;
-                    }
-
-                    if (row < 1 || row > 10) {
-                        System.out.println("Invalid row. Try again.");
-                        continue;
-                    }
-
-                    if (isPlayer) {
-                        if (!isShipPlacementValid(controller, row - 1, col, shipSizes[i], true)) {
-                            System.out.println("Invalid placement. Try again.");
-                            continue;
-                        }
-                    } else {
-                        if (!isShipPlacementValid(controller, row - 1, col, shipSizes[i], false)) {
-                            continue; // Try again with a new random position for the bot
-                        }
-                    }
-
-                    break; // Valid input, break the loop
-                } while (true);
-
-                char shipSymbol = isPlayer ? 'S' : 'B'; // 'S' for player, 'B' for bot
-                controller.setCell(row - 1, col, shipSymbol, isPlayer);
-            }
-            controller.updatePlayerView(); // Update player's view after placing each ship
+    public static int shipType(String shipType) {
+        switch (shipType.toLowerCase()) {
+            case "carrier":
+                return 5;
+            case "battleship":
+                return 4;
+            case "cruiser":
+                return 3;
+            case "submarine":
+                return 3;
+            case "destroyer":
+                return 2;
+            default:
+                throw new IllegalArgumentException("Invalid ship type");
         }
     }
 
-    private static boolean isShipPlacementValid(GridController controller, int row, int col, int shipSize, boolean isPlayer) {
-        char[][] grid = isPlayer ? controller.playerGrid.getGrid() : controller.botGrid.getGrid();
+    public static void placeShip(GridController controller, String shipType, char startRow, int startCol, char direction, int player) {
+        int shipLength = shipType(shipType);
+        int rowIndex = startRow - 'A';
+        int colIndex = startCol - 1;
 
-        // Check if the ship fits in the grid
-        if (col + shipSize > 10 && !isPlayer) {
-            return false; // Bot's random placement may exceed the grid, try again
+        if (direction == 'H') {
+            for (int i = 0; i < shipLength; i++) {
+                controller.setCell(rowIndex, colIndex + i, 'X');
+            }
+        } else if (direction == 'V') {
+            for (int i = 0; i < shipLength; i++) {
+                controller.setCell(rowIndex + i, colIndex, 'X');
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid direction");
         }
+    }
 
-        // Check if the cells are empty
-        for (int i = 0; i < shipSize; i++) {
-            if (grid[row][col + i] != '-') {
-                return false; // There is already a ship in the chosen position
+    public static boolean isGameOver(GridController controller) {
+        char[][] grid = controller.getGrid();
+        for (char[] row : grid) {
+            for (char cell : row) {
+                if (cell == 'X') {
+                    return false;
+                }
             }
         }
-
         return true;
     }
+
+    public static void main(String[] args) {
+        Grid player1Grid = new Grid(10, 10);
+        Grid player2Grid = new Grid(10, 10);
+
+        GridView view = new GridView();
+
+        GridController player1Controller = new GridController(player1Grid, view);
+        GridController player2Controller = new GridController(player2Grid, view);
+
+        try (Scanner battleship = new Scanner(System.in)) {
+            for (int player = 1; player <= 2; player++) {
+                for (int i = 0; i < 5; i++) {
+                    if (player == 1) {
+                        player1Controller.updateView();
+                    } else {
+                        player2Controller.updateView();
+                    }
+                    System.out.println("Player " + player + ", place your ship in this order. Carrier, Battleship, Cruiser, Submarine, and Destroyer. First input the ship name, then it will prompt you for the row, column, and direction.");
+                    String shipType = battleship.next();
+                    System.out.println("Enter starting row (A-J):");
+                    char row = battleship.next().toUpperCase().charAt(0);
+                    System.out.println("Enter starting column (1-10):");
+                    int col = battleship.nextInt();
+                    System.out.println("Enter direction (H for horizontal, V for vertical):");
+                    char direction = battleship.next().toUpperCase().charAt(0);
+
+                    try {
+                        if (player == 1) {
+                            placeShip(player1Controller, shipType, row, col, direction, player);
+                        } else {
+                            placeShip(player2Controller, shipType, row, col, direction, player);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("Error: " + e.getMessage());
+                        i--; // Decrement i to re-prompt for the current ship
+                    }
+                }
+            }
+
+            // Game loop
+            int currentPlayer = 1;
+            GridController currentController = player1Controller;
+            GridController opponentController = player2Controller;
+
+            while (!isGameOver(opponentController)) {
+                System.out.println("Player " + currentPlayer + ", it's now your turn!");
+                opponentController.updateView();
+                System.out.println("Enter target row(A-J):");
+                char targetRow = battleship.next().toUpperCase().charAt(0);
+                System.out.println("Enter target column (1-10): ");
+                int targetCol = battleship.nextInt();
+
+                // Check if the move is a hit or miss
+                char targetCell = opponentController.getGrid()[targetRow - 'A'][targetCol - 1];
+                if (targetCell == 'X') {
+                    System.out.println("It's a HIT!");
+                } else if (targetCell == '-') {
+                    System.out.println("It's a MISS!");
+                } else {
+                    System.out.println("Invalid move. You've already targeted the position.");
+                    continue;
+                }
+
+                // Update opponent's grid based on the move
+                opponentController.setCell(targetRow - 'A', targetCol - 1, 'O');
+
+                // Switch players for the next turn
+                currentPlayer = (currentPlayer == 1) ? 2 : 1;
+                currentController = (currentController == player1Controller) ? player2Controller : player1Controller;
+                opponentController = (opponentController == player1Controller) ? player2Controller : player1Controller;
+            }
+
+            // Game over, display the final results
+            System.out.println("Player " + currentPlayer + " wins! All opponent's ships are destroyed.");
+            opponentController.updateView();
+        }
+    }
 }
+
