@@ -42,7 +42,7 @@ class BoardView {
         System.out.println();
         char rowLabel = 'A';
         for (String[] row : grid) {
-            System.out.print(rowLabel +  " ");
+            System.out.print(rowLabel + " ");
             for (String cell : row) {
                 System.out.print(cell + " ");
             }
@@ -96,17 +96,18 @@ public class main {
         }
     }
 
-    public static boolean isGameOver(PlayerBoard playerBoard) {
-        String[][] ownBoard = playerBoard.getOwnBoard();
-        for (String[] row : ownBoard) {
+    public static boolean isGameOver(PlayerBoard currentPlayerBoard, PlayerBoard opponentPlayerBoard) {
+        String[][] opponentOwnBoard = opponentPlayerBoard.getOwnBoard();
+        for (String[] row : opponentOwnBoard) {
             for (String cell : row) {
                 if (cell.equals("🚢")) {
-                    return false;
+                    return false;  // There is still a ship remaining
                 }
             }
         }
-        return true;
+        return true;  // All ships have been destroyed
     }
+    
 
     public static void main(String[] args) {
         PlayerBoard player1 = new PlayerBoard();
@@ -172,19 +173,20 @@ public class main {
             PlayerBoard currentPlayerBoard = player1;
             PlayerBoard opponentPlayerBoard = player2;
 
-            while (!isGameOver(opponentPlayerBoard)) {
+            while (!isGameOver(currentPlayerBoard, opponentPlayerBoard)) {
                 System.out.println("Player " + currentPlayer + ", it's now your turn!");
-
+            
                 view.displayGrid(currentPlayerBoard.getTrackingBoard());
-
-                boolean hitAgain = false;
-
+            
+                boolean hitAgain;
+            
                 do {
+                    hitAgain = false;
                     System.out.println("Enter target row (A-J):");
                     char targetRow = battleship.next().toUpperCase().charAt(0);
                     System.out.println("Enter target column (1-10):");
                     int targetCol = battleship.nextInt();
-
+            
                     String targetCell = opponentPlayerBoard.getOwnBoard()[targetRow - 'A'][targetCol - 1];
                     if (targetCell.equals("🚢")) {
                         System.out.println("It's a HIT!");
@@ -193,15 +195,13 @@ public class main {
                     } else if (targetCell.equals("🔵")) {
                         System.out.println("It's a MISS!");
                         currentPlayerBoard.setTrackingBoardCell(targetRow - 'A', targetCol - 1, "⚪");  // White circle emoji for miss
-                        hitAgain = false;
                     } else {
                         System.out.println("Invalid move. You've already targeted the position.");
-                        hitAgain = false;
                     }
                 } while (hitAgain);
-
+            
                 currentPlayer = (currentPlayer == 1) ? 2 : 1;
-
+            
                 if (currentPlayer == 1) {
                     currentPlayerBoard = player1;
                     opponentPlayerBoard = player2;
@@ -210,8 +210,11 @@ public class main {
                     opponentPlayerBoard = player1;
                 }
             }
-
+            
+            
             System.out.println("Game over! Player " + currentPlayer + " wins!");
+            
+            
         }
     }
 }
