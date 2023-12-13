@@ -3,10 +3,12 @@ import java.util.Scanner;
 class PlayerBoard {
     private String[][] ownBoard;
     private String[][] trackingBoard;
+    private int hits;
 
     public PlayerBoard() {
         ownBoard = new String[10][10];
         trackingBoard = new String[10][10];
+        hits = 0;
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -30,6 +32,18 @@ class PlayerBoard {
 
     public String[][] getTrackingBoard() {
         return trackingBoard;
+    }
+
+    public void incrementHits() {
+        hits++;
+    }
+
+    public int getHits() {
+        return hits;
+    }
+
+    public boolean areAllShipsDestroyed() {
+        return hits >= 17;
     }
 }
 
@@ -85,10 +99,16 @@ public class main {
 
         if (direction == 'H') {
             for (int i = 0; i < shipLength; i++) {
+                if (!playerBoard.getOwnBoard()[rowIndex][colIndex + i].equals("🔵")) {
+                    throw new IllegalArgumentException("Ship placement overlaps with existing ship");
+                }
                 playerBoard.setOwnBoardCell(rowIndex, colIndex + i, "🚢");  // Ship emoji for ship
             }
         } else if (direction == 'V') {
             for (int i = 0; i < shipLength; i++) {
+                if (!playerBoard.getOwnBoard()[rowIndex + i][colIndex].equals("🔵")) {
+                    throw new IllegalArgumentException("Ship placement overlaps with existing ship");
+                }
                 playerBoard.setOwnBoardCell(rowIndex + i, colIndex, "🚢");  // Ship emoji for ship
             }
         } else {
@@ -96,18 +116,9 @@ public class main {
         }
     }
 
-    public static boolean isGameOver(PlayerBoard currentPlayerBoard, PlayerBoard opponentPlayerBoard) {
-        String[][] opponentOwnBoard = opponentPlayerBoard.getOwnBoard();
-        for (String[] row : opponentOwnBoard) {
-            for (String cell : row) {
-                if (cell.equals("🚢")) {
-                    return false;  // There is still a ship remaining
-                }
-            }
-        }
-        return true;  // All ships have been destroyed
+    public static boolean isGameOver(PlayerBoard opponentPlayerBoard) {
+        return opponentPlayerBoard.areAllShipsDestroyed();
     }
-    
 
     public static void main(String[] args) {
         PlayerBoard player1 = new PlayerBoard();
@@ -173,24 +184,30 @@ public class main {
             PlayerBoard currentPlayerBoard = player1;
             PlayerBoard opponentPlayerBoard = player2;
 
-            while (!isGameOver(currentPlayerBoard, opponentPlayerBoard)) {
+            while (true) {
                 System.out.println("Player " + currentPlayer + ", it's now your turn!");
-            
+
                 view.displayGrid(currentPlayerBoard.getTrackingBoard());
-            
+
                 boolean hitAgain;
-            
+
                 do {
+                    if (currentPlayerBoard.getHits() >= 17) {
+                        System.out.println("Game over! Player " + currentPlayer + " wins!");
+                        return;  // Exit the main method and end the game
+                    }
+
                     hitAgain = false;
                     System.out.println("Enter target row (A-J):");
                     char targetRow = battleship.next().toUpperCase().charAt(0);
                     System.out.println("Enter target column (1-10):");
                     int targetCol = battleship.nextInt();
-            
+
                     String targetCell = opponentPlayerBoard.getOwnBoard()[targetRow - 'A'][targetCol - 1];
                     if (targetCell.equals("🚢")) {
                         System.out.println("It's a HIT!");
                         currentPlayerBoard.setTrackingBoardCell(targetRow - 'A', targetCol - 1, "❌");  // Red X emoji for hit
+                        currentPlayerBoard.incrementHits();  // Increment hits for the current player
                         hitAgain = true;
                     } else if (targetCell.equals("🔵")) {
                         System.out.println("It's a MISS!");
@@ -199,9 +216,14 @@ public class main {
                         System.out.println("Invalid move. You've already targeted the position.");
                     }
                 } while (hitAgain);
-            
+
+                if (isGameOver(opponentPlayerBoard)) {
+                    System.out.println("Game over! Player " + currentPlayer + " wins!");
+                    break;  // Exit the game loop
+                }
+
                 currentPlayer = (currentPlayer == 1) ? 2 : 1;
-            
+
                 if (currentPlayer == 1) {
                     currentPlayerBoard = player1;
                     opponentPlayerBoard = player2;
@@ -210,11 +232,6 @@ public class main {
                     opponentPlayerBoard = player1;
                 }
             }
-            
-            
-            System.out.println("Game over! Player " + currentPlayer + " wins!");
-            
-            
         }
     }
 }
