@@ -127,15 +127,47 @@ public class main {
         BoardView view = new BoardView();
 
         try (Scanner battleship = new Scanner(System.in)) {
+            boolean[] enteredShipTypesPlayer1 = new boolean[5];
+            boolean[] enteredShipTypesPlayer2 = new boolean[5];
+
             for (int player = 1; player <= 2; player++) {
+                boolean[] enteredShipTypes = (player == 1) ? enteredShipTypesPlayer1 : enteredShipTypesPlayer2;
+
                 for (int i = 0; i < 5; i++) {
                     view.displayGrid(player == 1 ? player1.getOwnBoard() : player2.getOwnBoard());
-                    System.out.println("Please turn on caps lock. Player " + player + " you will first place your ships. First enter the type of ship. You can only use a ship one time. Choose between: Carrier, Battleship, Cruiser, Submarine, and Destroyer.");
-                    String shipType = battleship.next();  // Convert to uppercase once
-                    while (!shipType.equals("CARRIER") && !shipType.equals("BATTLESHIP") && !shipType.equals("CRUISER") && !shipType.equals("SUBMARINE") && !shipType.equals("DESTROYER")) {
-                        System.out.println("Invalid ship type. Please try again.");
-                        shipType = battleship.next().toUpperCase();  // Convert to uppercase in the loop as well
+                    System.out.println("Please turn on caps lock. Player " + player + ", you will first place your ships. First, enter the type of ship. You can only use a ship one time. Choose between: Carrier, Battleship, Cruiser, Submarine, and Destroyer.");
+
+                    String shipType;
+                    while (true) {
+                        shipType = battleship.next().toUpperCase();
+                        int shipIndex = -1;
+
+                        switch (shipType) {
+                            case "CARRIER":
+                                shipIndex = 0;
+                                break;
+                            case "BATTLESHIP":
+                                shipIndex = 1;
+                                break;
+                            case "CRUISER":
+                                shipIndex = 2;
+                                break;
+                            case "SUBMARINE":
+                                shipIndex = 3;
+                                break;
+                            case "DESTROYER":
+                                shipIndex = 4;
+                                break;
+                        }
+
+                        if (shipIndex == -1 || enteredShipTypes[shipIndex]) {
+                            System.out.println("Invalid ship type or you've already placed a ship of this type. Please try again.");
+                        } else {
+                            enteredShipTypes[shipIndex] = true;
+                            break;
+                        }
                     }
+
                     System.out.println("Enter starting row (A-J):");
                     char row;
                     while (true) {
